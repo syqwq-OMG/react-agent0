@@ -13,12 +13,40 @@ no retrieval, no controller, no model wrapper, and no scoring code.
 
 ## Environment
 
+Use [uv](https://docs.astral.sh/uv/) to manage Python and project dependencies.
+The project requires **Python 3.11 or newer**; the steps below use Python 3.11.
+
+1. Install uv (macOS / Linux):
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[dev]'
-python -m pytest -q
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+Restart your terminal after installation so `uv` is available on your `PATH`.
+For Windows and other installation options, see the
+[official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+2. From the project root, install Python and synchronize the environment:
+
+```bash
+uv python install 3.11
+uv sync --python 3.11 --extra dev
+```
+
+`uv sync` creates `.venv`, installs the project in editable mode, and installs its
+dependencies. `--extra dev` also installs the `dev` optional dependencies
+(including pytest) defined in `pyproject.toml`. The first sync generates `uv.lock`;
+subsequent syncs use it to keep dependency versions consistent.
+
+3. Run the tests through uv:
+
+```bash
+uv run --extra dev python -m pytest -q
+```
+
+Use `uv run --extra dev python <script.py>` to run other Python scripts in the same
+environment; manual activation is unnecessary. After changing dependencies in
+`pyproject.toml`, run `uv sync --extra dev` again.
 
 **Initial failing tests are EXPECTED**: that's your assignment. Implement in `react_agent/`
 then connect your implementation through the thin functions in `adapters.py`.

@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "react-from-scratch-assignment"
+name = "react-agent0"
 version = "0.0.0"
 description = "Minimal assignment harness; learners implement everything in react_agent/"
 requires-python = ">=3.11"
