@@ -117,13 +117,16 @@ def test_keyboard_interrupt_is_not_swallowed():
 
 
 def test_registered_contexts_remain_isolated():
-    first = make_tools([["Only A", ["SENTINEL_A"]]])
-    second = make_tools([["Only B", ["SENTINEL_B"]]])
+    # Use markers with no shared tokens under the required [a-z0-9]+ tokenizer.
+    # SENTINEL_A and SENTINEL_B both contain the token "sentinel", so they are
+    # not suitable for checking whether per-question contexts stay isolated.
+    first = make_tools([["Only A", ["ALPHAUNIQUE"]]])
+    second = make_tools([["Only B", ["BETAUNIQUE"]]])
     assert callable(first["search"]) and callable(first["lookup"])
-    assert first["lookup"](title="Only A")["sentences"] == ["SENTINEL_A"]
-    assert second["lookup"](title="Only B")["sentences"] == ["SENTINEL_B"]
-    assert first["search"](query="SENTINEL_A", k=1) == ["Only A"]
-    assert first["search"](query="SENTINEL_B", k=1) == []
+    assert first["lookup"](title="Only A")["sentences"] == ["ALPHAUNIQUE"]
+    assert second["lookup"](title="Only B")["sentences"] == ["BETAUNIQUE"]
+    assert first["search"](query="ALPHAUNIQUE", k=1) == ["Only A"]
+    assert first["search"](query="BETAUNIQUE", k=1) == []
     with pytest.raises(ValueError):
         first["lookup"](title="Only B")
     with pytest.raises(ValueError):
