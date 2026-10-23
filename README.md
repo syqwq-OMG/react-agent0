@@ -38,6 +38,10 @@ dependencies. `--extra dev` also installs the `dev` optional dependencies
 (including pytest) defined in `pyproject.toml`. The first sync generates `uv.lock`;
 subsequent syncs use it to keep dependency versions consistent.
 
+```
+source .venv/bin/activate  # optional, uv run can also activate automatically
+```
+
 3. Run the tests through uv:
 
 ```bash
