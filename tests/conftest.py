@@ -1,4 +1,6 @@
 """A small offline model double. It is intentionally not a ReAct implementation."""
+from copy import deepcopy
+
 import pytest
 
 
@@ -8,10 +10,13 @@ class ScriptedModel:
         self.seen_messages = []
 
     def generate(self, messages):
-        self.seen_messages.append([dict(message) for message in messages])
+        self.seen_messages.append(deepcopy(messages))
         if len(self.seen_messages) > len(self.outputs):
             pytest.fail("Agent called the model more often than expected")
-        return self.outputs[len(self.seen_messages) - 1]
+        output = self.outputs[len(self.seen_messages) - 1]
+        if isinstance(output, Exception):
+            raise output
+        return output
 
 
 @pytest.fixture
@@ -27,3 +32,13 @@ def toy_context():
         ["Lord Byron", ["Lord Byron was a British poet.", "He was born in London."]],
         ["Other Document", ["A completely unrelated paragraph about plants."]],
     ]
+
+
+@pytest.fixture(autouse=True)
+def no_external_network(monkeypatch):
+    """Unit tests must never reach an API or silently incur cost."""
+    import socket
+    def blocked(*args, **kwargs):
+        pytest.fail("Network disabled in unit tests; mock the transport instead")
+    monkeypatch.setattr(socket.socket, "connect", blocked)
+    monkeypatch.setattr(socket.socket, "connect_ex", blocked)

@@ -44,3 +44,87 @@ def test_lookup_preserves_sentence_index(toy_context):
     assert doc["title"] == "Ada Lovelace"
     assert doc["sentences"] == toy_context[0][1]
     assert "Lord Byron" in doc["sentences"][1]
+
+
+import json
+import pytest
+from adapters import make_tools
+
+
+def _action(name, **args):
+    return {"type": "tool_call", "tool": name, "args": args}
+
+
+@pytest.mark.parametrize("args", [{}, {"message": "hi", "extra": True}])
+def test_argument_binding_errors_are_observations(args):
+    calls = []
+    def echo(message):
+        calls.append(message)
+        return message
+    result = execute_tool(_action("echo", **args), {"echo": echo})
+    assert result["ok"] is False
+    assert result["observation"].startswith("ERROR:")
+    assert calls == []
+
+
+@pytest.mark.parametrize("value", [{"b": ["中文", 1], "a": True}, [1, {"a": 2}]])
+def test_structured_results_are_deterministic_json(value):
+    tools = {"structured": lambda: value}
+    first = execute_tool(_action("structured"), tools)
+    second = execute_tool(_action("structured"), tools)
+    assert first["ok"] is True
+    assert first["observation"] == second["observation"]
+    assert json.loads(first["observation"]) == value
+
+
+def test_string_observation_preserved_exactly():
+    value = "  中文\nnot JSON\t"
+    assert execute_tool(_action("echo"), {"echo": lambda: value}) == {
+        "ok": True, "observation": value,
+    }
+
+
+@pytest.mark.parametrize("limit", [64, 8000])
+def test_long_output_is_error_with_bounded_visible_preview(limit):
+    value = "VISIBLE_START " + "x" * (limit + 100)
+    result = execute_tool(_action("long"), {"long": lambda: value}, max_observation_chars=limit)
+    observation = result["observation"]
+    assert result["ok"] is False
+    assert observation.startswith("ERROR:")
+    assert len(observation) <= limit
+    assert "VISIBLE_START" in observation
+    assert any(word in observation.lower() for word in ("truncat", "截断", "省略"))
+
+
+def test_output_at_limit_is_not_truncated():
+    result = execute_tool(_action("echo"), {"echo": lambda: "x" * 64}, 64)
+    assert result == {"ok": True, "observation": "x" * 64}
+
+
+def test_unknown_tool_has_no_other_side_effects():
+    calls = []
+    result = execute_tool(_action("missing"), {"echo": lambda: calls.append(1)})
+    assert result["ok"] is False
+    assert result["observation"].startswith("ERROR:")
+    assert calls == []
+
+
+def test_keyboard_interrupt_is_not_swallowed():
+    def interrupt():
+        raise KeyboardInterrupt
+    with pytest.raises(KeyboardInterrupt):
+        execute_tool(_action("interrupt"), {"interrupt": interrupt})
+
+
+def test_registered_contexts_remain_isolated():
+    first = make_tools([["Only A", ["SENTINEL_A"]]])
+    second = make_tools([["Only B", ["SENTINEL_B"]]])
+    assert callable(first["search"]) and callable(first["lookup"])
+    assert first["lookup"](title="Only A")["sentences"] == ["SENTINEL_A"]
+    assert second["lookup"](title="Only B")["sentences"] == ["SENTINEL_B"]
+    assert first["search"](query="SENTINEL_A", k=1) == ["Only A"]
+    assert first["search"](query="SENTINEL_B", k=1) == []
+    with pytest.raises(ValueError):
+        first["lookup"](title="Only B")
+    with pytest.raises(ValueError):
+        second["lookup"](title="Only A")

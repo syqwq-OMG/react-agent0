@@ -40,3 +40,54 @@ def test_supporting_fact_partial():
     assert result["precision"] == pytest.approx(1.0)
     assert result["recall"] == pytest.approx(0.5)
     assert result["f1"] == pytest.approx(2.0 / 3.0)
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("  THE\tAn a  apple\n", "apple"),
+    ("theater and another", "theater and another"),
+    ("foo-bar", "foobar"),  # Official scorer deletes punctuation, not replaces it.
+    ("Ada's", "adas"),
+    ("", ""), ("A!", ""),
+])
+def test_normalization_order_and_word_boundaries(text, expected):
+    assert normalize_answer(text) == expected
+
+
+@pytest.mark.parametrize("value", [None, 10, True, [], {}])
+def test_normalize_rejects_non_string(value):
+    with pytest.raises(ValueError):
+        normalize_answer(value)
+
+
+@pytest.mark.parametrize("prediction,gold,expected", [
+    ("red red blue", "red blue blue", {"em": 0, "precision": 2/3, "recall": 2/3, "f1": 2/3}),
+    ("", "", {"em": 1, "precision": 0, "recall": 0, "f1": 0}),
+    ("", "London", {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ("London", "", {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ("yes", "yes indeed", {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ("yes indeed", "yes", {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ("noanswer", "noanswer maybe", {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ("no", "no way", {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ("Yes!", "yes", {"em": 1, "precision": 1, "recall": 1, "f1": 1}),
+])
+def test_official_answer_edge_cases(prediction, gold, expected):
+    result = score_answer(prediction, gold)
+    for key, value in expected.items():
+        assert result[key] == pytest.approx(value)
+        assert 0 <= result[key] <= 1
+
+
+@pytest.mark.parametrize("prediction,gold,expected", [
+    ([], [], {"em": 1, "precision": 0, "recall": 0, "f1": 0}),
+    ([], [["T", 0]], {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ([["T", 0]], [], {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ([["T", 0], ["T", 0]], [["T", 0]], {"em": 1, "precision": 1, "recall": 1, "f1": 1}),
+    ([["T", 0]], [["T", 0], ["T", 0]], {"em": 1, "precision": 1, "recall": 1, "f1": 1}),
+    ([["the Title", 0]], [["The Title", 0]], {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ([["T", 0]], [["T", 1]], {"em": 0, "precision": 0, "recall": 0, "f1": 0}),
+    ([["T", 0], ["X", 0]], [["T", 0]], {"em": 0, "precision": .5, "recall": 1, "f1": 2/3}),
+])
+def test_support_set_edge_cases(prediction, gold, expected):
+    result = score_support(prediction, gold)
+    for key, value in expected.items():
+        assert result[key] == pytest.approx(value)

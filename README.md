@@ -1,11 +1,22 @@
 # ReAct From Scratch — minimal CS336-style starter
 
+## 作业要求与阅读路线
+
+作业要求以 [react-agent-assignment.pdf](react-agent-assignment.pdf)（v4.0）为准。
+先阅读知识讲解，再按章节完成实现与测试。建议从第 3 节的 JSON 解析器开始，
+先完成离线测试，再接入真实模型。
+
+`adapters.py` 已提供 PDF 中全部 20 个公共入口，只转发到 `react_agent/` 对应模块。
+尚未编写的模块会给出包含函数路径的 `NotImplementedError`；这表示该题待实现。
+模块名称可以调整，同时修改 adapter 的转发目标即可。完整测试路线见
+[tests/README.md](tests/README.md)。
+
 This is intentionally **almost empty**. It contains no Agent implementation, no prompt,
 no retrieval, no controller, no model wrapper, and no scoring code.
 
 ## Included
 
-- `adapters.py`: signatures only (`raise NotImplementedError`), as in CS336.
+- `adapters.py`: all public contracts and thin lazy forwarding, as in CS336.
 - `react_agent/__init__.py`: one empty package entrypoint. **Put all your own code here.**
 - `tests/`: offline black-box interface tests with a tiny ScriptedModel test double.
 - `pyproject.toml`, `.env.example`, `.gitignore`: environment setup only.
@@ -53,7 +64,7 @@ environment; manual activation is unnecessary. After changing dependencies in
 `pyproject.toml`, run `uv sync --extra dev` again.
 
 **Initial failing tests are EXPECTED**: that's your assignment. Implement in `react_agent/`
-then connect your implementation through the thin functions in `adapters.py`.
+using the module/function names documented in `adapters.py`, or adjust its forwarding targets.
 Do not edit the tests. Do not implement the Agent in adapters.py.
 
 ## Provider examples (not implementations)
