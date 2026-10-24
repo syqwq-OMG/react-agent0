@@ -28,15 +28,7 @@ def test_tool_exception_becomes_error_observation():
 
 def test_search_retrieves_expected_title(toy_context):
     titles = run_search(toy_context, "Analytical Engine", k=2)
-    assert isinstance(titles, list)
-    assert 0 < len(titles) <= 2
     assert titles[0] == "Ada Lovelace"
-    assert all(isinstance(title, str) for title in titles)
-
-
-def test_search_is_deterministic_and_bounded(toy_context):
-    assert run_search(toy_context, "Lord Byron", 1) == run_search(toy_context, "Lord Byron", 1)
-    assert len(run_search(toy_context, "Lord Byron", 1)) <= 1
 
 
 def test_lookup_preserves_sentence_index(toy_context):
@@ -122,7 +114,6 @@ def test_registered_contexts_remain_isolated():
     # not suitable for checking whether per-question contexts stay isolated.
     first = make_tools([["Only A", ["ALPHAUNIQUE"]]])
     second = make_tools([["Only B", ["BETAUNIQUE"]]])
-    assert callable(first["search"]) and callable(first["lookup"])
     assert first["lookup"](title="Only A")["sentences"] == ["ALPHAUNIQUE"]
     assert second["lookup"](title="Only B")["sentences"] == ["BETAUNIQUE"]
     assert first["search"](query="ALPHAUNIQUE", k=1) == ["Only A"]

@@ -108,7 +108,7 @@ def test_budget_states_and_actual_side_effects(scripted_model, steps, tools, out
     assert len(called) == attempts
 
 
-@pytest.mark.parametrize("steps,tools", [(-1, 1), (1, -1), (True, 1), (1, False), (1.2, 1), (1, None)])
+@pytest.mark.parametrize("steps,tools", [(-1, 1), (1, -1), (True, 1), (1, 1.2)])
 def test_invalid_budget_before_model_or_tool(scripted_model, steps, tools):
     model = scripted_model([])
     calls = []

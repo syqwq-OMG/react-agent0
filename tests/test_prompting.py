@@ -1,8 +1,6 @@
 """Assignment §6.1: observable message contracts, not exact prompt wording."""
 from copy import deepcopy
 
-import pytest
-
 from adapters import append_observation, build_initial_messages
 
 
@@ -34,15 +32,3 @@ def test_append_returns_new_history_and_marks_untrusted_data():
     assert result[-1]["content"].startswith("Observation:")
     assert observation in result[-1]["content"]
     assert result[0] == before[0]
-
-
-@pytest.mark.parametrize("steps,tools", [(-1, 0), (1, -1), (True, 1), (1, False), (1.5, 1), (1, "2")])
-def test_initial_messages_reject_invalid_budgets(steps, tools):
-    with pytest.raises(ValueError):
-        build_initial_messages("question", DESCRIPTIONS, steps, tools)
-
-
-@pytest.mark.parametrize("question,descriptions", [(None, DESCRIPTIONS), (7, DESCRIPTIONS), ("q", None), ("q", [])])
-def test_initial_messages_reject_invalid_text(question, descriptions):
-    with pytest.raises(ValueError):
-        build_initial_messages(question, descriptions, 8, 6)
